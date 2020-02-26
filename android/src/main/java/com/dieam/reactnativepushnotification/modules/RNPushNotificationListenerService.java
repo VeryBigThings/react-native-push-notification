@@ -39,6 +39,7 @@ import java.util.Random;
 import static com.dieam.reactnativepushnotification.modules.RNPushNotification.LOG_TAG;
 
 public class RNPushNotificationListenerService extends FirebaseMessagingService {
+    private static String KEY_INCOMING_CALL = "incomingCall";
     private static int NOTIFICATION_ID = 10;
     private static String NOTIFICATION_CHANNEL_NAME = "benefy-notification-channel";
     private static String NOTIFICATION_CHANNEL_ID = NOTIFICATION_CHANNEL_NAME + "-id";
@@ -80,7 +81,7 @@ public class RNPushNotificationListenerService extends FirebaseMessagingService 
 
     private String getCallerName(RemoteMessage message) {
         try {
-            String data = message.getData().get("incomingCall");
+            String data = message.getData().get(KEY_INCOMING_CALL);
             JSONObject dataObject = new JSONObject(data);
             String caller = dataObject.getString("user");
             JSONObject callerObject = new JSONObject(caller);
@@ -110,7 +111,7 @@ public class RNPushNotificationListenerService extends FirebaseMessagingService 
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             intent.setAction(Intent.ACTION_MAIN);
             intent.addCategory(Intent.CATEGORY_LAUNCHER);
-            intent.putExtra("incomingCall", message.getData().get("incomingCall"));
+            intent.putExtra(KEY_INCOMING_CALL, message.getData().get(KEY_INCOMING_CALL));
             intent.putExtra("showIncomingCallScreen", showIncomingCallScreen);
 
             PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(context, 0,
@@ -127,7 +128,7 @@ public class RNPushNotificationListenerService extends FirebaseMessagingService 
 
     @Override
     public void onMessageReceived(RemoteMessage message) {
-        if (message.getData().get("incomingCall") != null) {
+        if (message.getData().get(KEY_INCOMING_CALL) != null) {
             handleIncomingCall(message);
         } else {
             String from = message.getFrom();
