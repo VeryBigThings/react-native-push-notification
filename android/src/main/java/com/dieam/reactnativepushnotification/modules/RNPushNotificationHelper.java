@@ -594,8 +594,14 @@ public class RNPushNotificationHelper {
 
         NotificationChannel channel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, this.config.getChannelName() != null ? this.config.getChannelName() : "rn-push-notification-channel", importance);
 
+        // fix for Android 8+ devices (vibration settings were ignored - https://github.com/zo0r/react-native-push-notification/issues/1140)
+        long vibration = bundle.containsKey("vibration") ? (long) bundle.getDouble("vibration") : DEFAULT_VIBRATION;
+        long[] vibratePattern = (bundle.containsKey("vibrate") && bundle.getBoolean("vibrate")) ? new long[]{0, vibration} : new long[]{ 0 };
+
         channel.setDescription(this.config.getChannelDescription());
         channel.enableLights(true);
+
+        channel.setVibrationPattern(vibratePattern);
         channel.enableVibration(true);
 
         manager.createNotificationChannel(channel);
