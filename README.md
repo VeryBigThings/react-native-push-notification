@@ -466,7 +466,7 @@ Same parameters as `PushNotification.localNotification()`
 * these instructions are Work In Progress and will be updated
 
 ## How to get incoming call data
-Before continuing:
+### *** Before continuing: *** ###
 ### Android
 Make sure that this package (react-native-push-notification) is properly linked and that the basic notifications are working. You can test them via https://www.apnstester.com/fcm/, https://pushtry.com/ etc.
 
