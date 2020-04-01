@@ -107,7 +107,7 @@ public class RNPushNotificationListenerService extends FirebaseMessagingService 
             Intent cancelBtnIntent = new Intent(context, AutoDismissReceiver.class);
             cancelBtnIntent.putExtra("notificationId", NOTIFICATION_ID);
             PendingIntent cancelPendingIntent = PendingIntent.getBroadcast(context, 1, cancelBtnIntent, 0);
-            Intent intent = getPackageManager().getLaunchIntentForPackage("com.banyan.benefy");
+            Intent intent = getPackageManager().getLaunchIntentForPackage(context.getPackageName());
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             intent.setAction(Intent.ACTION_MAIN);
             intent.addCategory(Intent.CATEGORY_LAUNCHER);
