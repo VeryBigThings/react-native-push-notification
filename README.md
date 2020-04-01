@@ -494,6 +494,163 @@ Go to `AndroidManifest.xml` and add AutoDismissReceiver. This is used to properl
         ...
 ```
 
+Go to `MainActivity.java` and replace everything with the following code. Make sure that you replace `com.your.package` with your package name. Also, if you need, feel free to add your own code in any of these methods. This code is responsible for waking up the phone, drawing application over the lockscreen and sending events with call data to our React Native app.
+
+```
+package com.your.package;
+
+import android.app.KeyguardManager;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.content.Intent;
+import android.hardware.display.DisplayManager;
+import android.os.Build;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.Display;
+import android.view.WindowManager;
+
+import androidx.annotation.Nullable;
+
+import com.facebook.react.ReactActivity;
+import com.facebook.react.ReactActivityDelegate;
+import com.facebook.react.ReactInstanceManager;
+import com.facebook.react.bridge.ReactContext;
+import com.facebook.react.modules.core.DeviceEventManagerModule;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.ReactRootView;
+import com.swmansion.gesturehandler.react.RNGestureHandlerEnabledRootView;
+
+import java.util.Timer;
+import java.util.TimerTask;
+
+public class MainActivity extends ReactActivity {
+    private static String INCOMING_CALL_EVENT = "incomingCallEvent";
+
+    /**
+     * Returns the name of the main component registered from JavaScript. This is used to schedule
+     * rendering of the component.
+     */
+    @Override
+    protected String getMainComponentName() {
+        return com.your.package;
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                Display display = getWindowManager().getDefaultDisplay();
+
+                if (display.getState() != Display.STATE_ON) {
+                    moveTaskToBack(true);
+                }
+            }
+        }, 1500);
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        Intent intent = getIntent();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true);
+            setTurnScreenOn(true);
+            KeyguardManager keyguardManager = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
+            keyguardManager.requestDismissKeyguard(this, null);
+        } else {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
+                    WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED |
+                    WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON |
+                    WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        }
+
+        sendToReactNative(intent);
+    }
+
+    @Override
+    public void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+
+        sendToReactNative(intent);
+    }
+
+    @Override
+    protected ReactActivityDelegate createReactActivityDelegate() {
+        return new ReactActivityDelegate(this, getMainComponentName()) {
+            @Nullable
+            @Override
+            protected Bundle getLaunchOptions() {
+                Intent intent = getIntent();
+
+                return getInitialLaunchBundle(intent);
+            }
+
+            @Override
+            protected ReactRootView createRootView() {
+                return new RNGestureHandlerEnabledRootView(MainActivity.this);
+            }
+        };
+    }
+
+    private Bundle getInitialLaunchBundle(Intent intent) {
+        if (intent.getExtras() != null) {
+            String incomingCallData = intent.getExtras().getString("incomingCall");
+            boolean showIncomingCallScreen = intent.getExtras().getBoolean("showIncomingCallScreen");
+
+            Bundle bundle = new Bundle();
+            bundle.putString("incomingCallData", incomingCallData);
+            bundle.putBoolean("showIncomingCallScreen", showIncomingCallScreen);
+            return bundle;
+        }
+
+        return null;
+    }
+
+    private void sendToReactNative(Intent intent) {
+        if (intent.getExtras() != null) {
+            String incomingCallData = intent.getExtras().getString("incomingCall");
+
+            if (incomingCallData != null) {
+                boolean showIncomingCallScreen = intent.getExtras().getBoolean("showIncomingCallScreen");
+                WritableMap params = Arguments.createMap();
+                NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                ReactInstanceManager reactInstanceManager = getReactNativeHost().getReactInstanceManager();
+                ReactContext reactContext = reactInstanceManager.getCurrentReactContext();
+
+                notificationManager.cancelAll();
+                params.putString("incomingCallData", incomingCallData);
+                params.putBoolean("showIncomingCallScreen", showIncomingCallScreen);
+
+                if (reactContext != null) {
+                    sendEvent(reactContext, INCOMING_CALL_EVENT, params);
+                } else {
+                    reactInstanceManager.addReactInstanceEventListener(new ReactInstanceManager.ReactInstanceEventListener() {
+                        @Override
+                        public void onReactContextInitialized(ReactContext context) {
+                            sendEvent(context, INCOMING_CALL_EVENT, params);
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    private void sendEvent(ReactContext reactContext,
+                           String eventName,
+                           @Nullable WritableMap params) {
+        reactContext
+                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                .emit(eventName, params);
+    }
+}
+```
+
 #### iOS
 
 2.) To connect voip push notifications with Callkeep on iOS, add the following code inside yourProject/AppDelegate.m:
