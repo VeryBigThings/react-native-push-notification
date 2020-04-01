@@ -463,14 +463,38 @@ Same parameters as `PushNotification.localNotification()`
 `PushNotification.abandonPermissions()` Abandon permissions
 
 # *** VBT ***
-* these instructions are Work In Progress and will probably be updated
+* these instructions are Work In Progress and will be updated
 
 ## How to get incoming call data
-1.) We're using voip notifications and Callkeep to trigger calls on iOS, so first install/link these packages and follow the instructions from `react-native-voip-push-notification` to fetch the voip token and register a device:
+Before continuing:
+### Android
+Make sure that this package (react-native-push-notification) is properly linked and that the basic notifications are working. You can test them via https://www.apnstester.com/fcm/, https://pushtry.com/ etc.
 
-voip push notifications: https://github.com/react-native-webrtc/react-native-voip-push-notification
+### iOS
+iOS is not using this package to handle notifications, but for the sake of simplicity, I'll also leave the iOS instructions here. Make sure that you install and link the following packages:
+- [react-native-voip-push-notification](https://github.com/react-native-webrtc/react-native-voip-push-notification)
+- [react-native-callkeep](https://github.com/react-native-webrtc/react-native-callkeep)
 
-callkeep: https://github.com/react-native-webrtc/react-native-callkeep
+To test iOS voip notifications, I've used the macOS app called [Pusher](https://github.com/noodlewerk/NWPusher), so make sure that basic notifications are working before continuing.
+
+If both Android and iOS notifications are working, we're ready to connect custom incoming call notifications with our app.
+
+### 1.) Native part
+#### Android
+Go to `AndroidManifest.xml` and add AutoDismissReceiver. This is used to properly cancel the incoming call notification after clicking on the "Reject" button:
+```
+<application
+      android:name=".MainApplication"
+      android:label="@string/app_name"
+      android:icon="@mipmap/ic_launcher"
+      android:roundIcon="@mipmap/ic_launcher_round"
+      android:allowBackup="false"
+      android:theme="@style/AppTheme">
++        <receiver android:name="com.dieam.reactnativepushnotification.modules.AutoDismissReceiver" />
+        ...
+```
+
+#### iOS
 
 2.) To connect voip push notifications with Callkeep on iOS, add the following code inside yourProject/AppDelegate.m:
 
