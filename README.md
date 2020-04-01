@@ -461,3 +461,74 @@ Same parameters as `PushNotification.localNotification()`
 `PushNotification.getApplicationIconBadgeNumber(callback: Function)` Get badge number
 
 `PushNotification.abandonPermissions()` Abandon permissions
+
+# *** VBT ***
+* these instructions are Work In Progress and will probably be updated
+
+## How to get incoming call data
+1.) We're using voip notifications and Callkeep to trigger calls on iOS, so first install/link these packages and follow the instructions from `react-native-voip-push-notification` to fetch the voip token and register a device:
+voip push notifications: https://github.com/react-native-webrtc/react-native-voip-push-notification
+callkeep: https://github.com/react-native-webrtc/react-native-callkeep
+
+2.) To connect voip push notifications with Callkeep on iOS, add the following code inside yourProject/AppDelegate.m:
+
+```
+...
+#import "RNCallKeep.h"
+#import <PushKit/PushKit.h>
+#import "RNVoipPushNotificationManager.h"
+
+...
+// Handle incoming pushes
+- (void)pushRegistry:(PKPushRegistry *)registry didReceiveIncomingPushWithPayload:(PKPushPayload *)payload forType:(NSString *)type {
+  
+  if ([payload.dictionaryPayload objectForKey:@"incomingCall"]) {
+    NSDictionary *callerData = [payload.dictionaryPayload valueForKeyPath:@"incomingCall.user"];
+    
+    NSString *callerName = [NSString stringWithFormat:@"%@ %@", [callerData valueForKey:@"firstName"], [callerData valueForKey:@"lastName"]];
+    NSString *uuid = [[[NSUUID UUID] UUIDString] lowercaseString];
+    NSString *handle = @"-";
+
+    // IMPORTANT - this line reports the call to Callkit
+    [RNCallKeep reportNewIncomingCall:uuid handle:handle handleType:@"generic" hasVideo:false localizedCallerName:callerName fromPushKit: YES];
+  }
+  
+  // Process the received push
+  [RNVoipPushNotificationManager didReceiveIncomingPushWithPayload:payload forType:(NSString *)type];
+}
+...
+```
+
+3.) In your root component (`App.js` in our case), add the following code inside the `Component Did Mount` method or effect (if you're using Hooks):
+
+```
+import React, { useEffect } from "react";
+import { DeviceEventEmitter } from "react-native";
+import RNCallKeep from "react-native-callkeep";
+
+// component did mount
+useEffect(() => {
+if (isAndroid) {
+  DeviceEventEmitter.addListener("incomingCallEvent", onIncomingCall);
+  /**
+   * initial props containing incoming call data are sent from the native Android code since the "incomingCallEvent"
+   * won't fire in some cases (e.g. when the app is killed and device is locked)
+   */
+  if (props.incomingCallData) {
+    const { incomingCallData, showIncomingCallScreen } = props;
+
+    onIncomingCall({ incomingCallData, showIncomingCallScreen });
+  }
+} else {
+  RNCallKeep.addEventListener("answerCall", onIncomingCall);
+}
+}, []);
+
+const onIncomingCall = data => {
+    const callData = isAndroid
+      ? date
+      : { incomingCallData: refIosCallData.current };
+
+    // pass callData down to other components or do something else with it
+};
+```
