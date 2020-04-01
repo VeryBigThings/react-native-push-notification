@@ -652,8 +652,7 @@ public class MainActivity extends ReactActivity {
 ```
 
 #### iOS
-
-2.) To connect voip push notifications with Callkeep on iOS, add the following code inside yourProject/AppDelegate.m:
+To connect voip push notifications with Callkeep on iOS, add the following code inside yourProject/AppDelegate.m:
 
 ```
 ...
@@ -682,7 +681,8 @@ public class MainActivity extends ReactActivity {
 ...
 ```
 
-3.) In your root component (`App.js` in our case), add the following code inside the `Component Did Mount` method or effect (if you're using Hooks):
+### 2.) React Native/JS part
+In your root component (`App.js` in our case), add the following code inside the `Component Did Mount` method or effect (if you're using Hooks):
 
 ```
 import React, { useEffect } from "react";
