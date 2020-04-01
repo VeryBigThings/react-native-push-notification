@@ -467,7 +467,9 @@ Same parameters as `PushNotification.localNotification()`
 
 ## How to get incoming call data
 1.) We're using voip notifications and Callkeep to trigger calls on iOS, so first install/link these packages and follow the instructions from `react-native-voip-push-notification` to fetch the voip token and register a device:
+
 voip push notifications: https://github.com/react-native-webrtc/react-native-voip-push-notification
+
 callkeep: https://github.com/react-native-webrtc/react-native-callkeep
 
 2.) To connect voip push notifications with Callkeep on iOS, add the following code inside yourProject/AppDelegate.m:
