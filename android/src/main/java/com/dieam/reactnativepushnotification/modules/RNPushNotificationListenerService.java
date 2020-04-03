@@ -117,7 +117,16 @@ public class RNPushNotificationListenerService extends FirebaseMessagingService 
             PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(context, 0,
                     intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-            int notificationIcon = context.getResources().getIdentifier("ic_stat_notification", "mipmap", context.getPackageName());
+            int notificationIcon;
+            int mainIcon = context.getResources().getIdentifier("ic_stat_notification", "mipmap", context.getPackageName());
+            int fallbackIcon = context.getResources().getIdentifier("ic_launcher_round", "mipmap", context.getPackageName());
+
+            if (mainIcon == 0) {
+                notificationIcon = fallbackIcon;
+            } else {
+                notificationIcon = mainIcon;
+            }
+
             String callerName = getCallerName(message);
 
             sendIncomingCallNotification(context, notificationIcon, callerName, fullScreenPendingIntent, cancelPendingIntent);
