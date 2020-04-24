@@ -100,7 +100,6 @@ public class RNPushNotificationListenerService extends FirebaseMessagingService 
             cancelBtnIntent.putExtra("notificationId", NOTIFICATION_ID);
             PendingIntent cancelPendingIntent = PendingIntent.getBroadcast(context, 1, cancelBtnIntent, 0);
             String callerName = getCallerName(message);
-            Log.d("PUSHNOTIF", "Package name: " + context.getPackageName());
 
             Intent incomingCallIntent = new Intent(context, Class.forName(context.getPackageName() + ".IncomingCallActivity"));
             incomingCallIntent.putExtra(KEY_INCOMING_CALL, message.getData().get(KEY_INCOMING_CALL));
