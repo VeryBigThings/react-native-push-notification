@@ -41,15 +41,11 @@ import static com.dieam.reactnativepushnotification.modules.RNPushNotification.L
 public class RNPushNotificationListenerService extends FirebaseMessagingService {
     private static String KEY_INCOMING_CALL = "incomingCall";
     private static int NOTIFICATION_ID = 10;
-    private static String NOTIFICATION_CHANNEL_NAME = "benefy-notification-channel";
+    private static String NOTIFICATION_CHANNEL_NAME = "incoming-calls-notification-channel";
     private static String NOTIFICATION_CHANNEL_ID = NOTIFICATION_CHANNEL_NAME + "-id";
     private static long[] VIBRATION_PATTERN = new long[]{1000, 2000, 1000, 2000, 1000, 2000, 1000, 2000, 1000, 2000, 1000, 2000, 1000, 2000, 1000, 2000, 1000, 2000, 1000, 2000, 1000, 2000, 1000, 2000, 1000, 2000, 1000, 2000, 1000, 2000};
 
-    private boolean isDeviceLocked(KeyguardManager keyguardManager, PowerManager powerManager) {
-        return keyguardManager.isDeviceLocked() || !powerManager.isInteractive();
-    }
-
-    private void sendIncomingCallNotification(Context context, int notificationIcon, String callerName, PendingIntent mainIntent, PendingIntent cancelIntent) {
+    private void sendIncomingCallNotification(Context context, int notificationIcon, String callerName, PendingIntent incomingCallIntent, PendingIntent cancelIntent, PendingIntent mainAppIntent) {
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
                         .setSmallIcon(notificationIcon)
@@ -64,8 +60,8 @@ public class RNPushNotificationListenerService extends FirebaseMessagingService 
                         // interacts with the notification. Also, if your app targets Android 10
                         // or higher, you need to request the USE_FULL_SCREEN_INTENT permission in
                         // order for the platform to invoke this notification.
-                        .setFullScreenIntent(mainIntent, true)
-                        .addAction(0, "Accept", mainIntent)
+                        .setFullScreenIntent(incomingCallIntent, true)
+                        .addAction(0, "Accept", mainAppIntent)
                         .addAction(0, "Reject", cancelIntent);
 
         NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
@@ -99,23 +95,27 @@ public class RNPushNotificationListenerService extends FirebaseMessagingService 
 
     private void handleIncomingCall(RemoteMessage message) {
         try {
-            KeyguardManager keyguardManager = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
-            PowerManager powerManager = (PowerManager) getApplicationContext()
-                    .getSystemService(Context.POWER_SERVICE);
             Context context = getApplicationContext();
-            boolean showIncomingCallScreen = isDeviceLocked(keyguardManager, powerManager);
             Intent cancelBtnIntent = new Intent(context, AutoDismissReceiver.class);
             cancelBtnIntent.putExtra("notificationId", NOTIFICATION_ID);
             PendingIntent cancelPendingIntent = PendingIntent.getBroadcast(context, 1, cancelBtnIntent, 0);
-            Intent intent = getPackageManager().getLaunchIntentForPackage(context.getPackageName());
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.setAction(Intent.ACTION_MAIN);
-            intent.addCategory(Intent.CATEGORY_LAUNCHER);
-            intent.putExtra(KEY_INCOMING_CALL, message.getData().get(KEY_INCOMING_CALL));
-            intent.putExtra("showIncomingCallScreen", showIncomingCallScreen);
+            String callerName = getCallerName(message);
+            Log.d("PUSHNOTIF", "Package name: " + context.getPackageName());
 
-            PendingIntent fullScreenPendingIntent = PendingIntent.getActivity(context, 0,
-                    intent, PendingIntent.FLAG_UPDATE_CURRENT);
+            Intent incomingCallIntent = new Intent(context, Class.forName(context.getPackageName() + ".IncomingCallActivity"));
+            incomingCallIntent.putExtra(KEY_INCOMING_CALL, message.getData().get(KEY_INCOMING_CALL));
+            incomingCallIntent.putExtra("callerName", callerName);
+
+            Intent mainAppIntent = new Intent(context, Class.forName(context.getPackageName() + ".MainActivity"));
+            mainAppIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            mainAppIntent.setAction(Intent.ACTION_MAIN);
+            mainAppIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+            mainAppIntent.putExtra(KEY_INCOMING_CALL, message.getData().get(KEY_INCOMING_CALL));
+
+            PendingIntent incomingCallPendingIntent = PendingIntent.getActivity(context, 10,
+                    incomingCallIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+            PendingIntent mainAppPendingIntent = PendingIntent.getActivity(context, 20,
+                    mainAppIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
             int notificationIcon;
             int mainIcon = context.getResources().getIdentifier("ic_stat_notification", "mipmap", context.getPackageName());
@@ -127,9 +127,7 @@ public class RNPushNotificationListenerService extends FirebaseMessagingService 
                 notificationIcon = mainIcon;
             }
 
-            String callerName = getCallerName(message);
-
-            sendIncomingCallNotification(context, notificationIcon, callerName, fullScreenPendingIntent, cancelPendingIntent);
+            sendIncomingCallNotification(context, notificationIcon, callerName, incomingCallPendingIntent, cancelPendingIntent, mainAppPendingIntent);
         } catch (Exception e) {
             Log.w(LOG_TAG, "Failed to open application on message receive", e);
         }
